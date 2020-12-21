@@ -23,7 +23,13 @@ public:
     template<typename T>
     T getValue(const char* var) const
     {
-        std::unique_lock<std::mutex> lock const
+        std::unique_lock<std::mutex> lock(m_mutex);
+        T t = m_vm[var].as<T>();
+
+        return t;
+    }
+
+    bool isDaemon() const
     {
         return m_is_daemon;
     }

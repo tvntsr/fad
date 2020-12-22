@@ -1,11 +1,13 @@
 CC=gcc
 CXX=g++
 RM=rm -f
-CPPFLAGS  = -std=c++17 -O3 -Wall -Winline -pipe -flto 
+CPPFLAGS  = -std=c++17 -g3 -Wall -Winline -pipe -flto 
+
+LDLIBS = -lboost_coroutine -lboost_context -lboost_program_options -lboost_system -pthread
 
 TARGET_DIR = /usr/local/bin/
 
-SRCS=fad.cpp
+SRCS=fad.cpp log.cpp config.cpp fanotify.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 .PHONY: all

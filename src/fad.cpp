@@ -17,8 +17,30 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string.hpp>
 
+#include <boost/asio/signal_set.hpp>
+#include <boost/asio/spawn.hpp>
+
+#include "config.hpp"
+#include "log.hpp"
+#include "fanotify.hpp"
+
 namespace fs = std::filesystem;
 using namespace std;
+
+static void
+daemonizeIfConfigured(const Config& cfg)
+{
+    if (cfg.isDaemon())
+    {
+        LogWarning(<<"Act as daemon...");
+
+        int ret = daemon(0, 0);
+        if (ret == -1)
+        {
+            LogFatal(<< "Cannot daemonize...");
+        }
+    }
+}
 
 static std::tuple<int, int>
 parse_proc(int pid)
@@ -167,74 +189,88 @@ main(int argc, char *argv[])
 
     printf("Press enter key to terminate.\n");
 
-    /* Create the file descriptor for accessing the fanotify API */
+    boost::asio::io_context io_context;
+    boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+    signals.async_wait([&](auto, auto){ io_context.stop(); });
 
-    fd = fanotify_init(FAN_CLOEXEC | FAN_CLASS_CONTENT | FAN_NONBLOCK,
-                       O_RDONLY | O_LARGEFILE);
-    if (fd == -1) {
-        perror("fanotify_init");
-        exit(EXIT_FAILURE);
+    try
+    {
+        /* Create the file descriptor for accessing the fanotify API */
+        FanotifyGroup f_group(io_context, FAN_CLOEXEC | FAN_CLASS_NOTIF /*| FAN_NONBLOCK*/);
+
+        /* Mark the mount for:
+           - permission events before opening files
+           - notification events after closing a write-enabled
+           file descriptor */
+        f_group.addMark(argv[1], FAN_ACCESS | FAN_MODIFY | FAN_CLOSE_WRITE | FAN_ONDIR  );
+
+
+        printf("Listening for events.\n");
+
+        boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)
+                                       {f_group.asyncEvent(yield);});
+
+        io_context.run();
     }
-
-    /* Mark the mount for:
-       - permission events before opening files
-       - notification events after closing a write-enabled
-       file descriptor */
-
-    if (fanotify_mark(fd, FAN_MARK_ADD | FAN_MARK_MOUNT,
-                      FAN_OPEN_PERM | FAN_CLOSE_WRITE, AT_FDCWD,
-                      argv[1]) == -1) {
-        perror("fanotify_mark");
-        exit(EXIT_FAILURE);
+    catch(std::exception& err)
+    {
+        printf("Error %s\n", err.what());
     }
-
-    /* Prepare for polling */
-
-    nfds = 2;
-
-    /* Console input */
-
-    fds[0].fd = STDIN_FILENO;
-    fds[0].events = POLLIN;
-
-    /* Fanotify input */
-
-    fds[1].fd = fd;
-    fds[1].events = POLLIN;
-
-    /* This is the loop to wait for incoming events */
-
-    printf("Listening for events.\n");
-
-    while (1) {
-        poll_num = poll(fds, nfds, -1);
-        if (poll_num == -1) {
-            if (errno == EINTR)     /* Interrupted by a signal */
-                continue;           /* Restart poll() */
-
-            perror("poll");         /* Unexpected error */
-            exit(EXIT_FAILURE);
-        }
-
-        if (poll_num > 0) {
-            if (fds[0].revents & POLLIN) {
-
-                /* Console input is available: empty stdin and quit */
-
-                while (read(STDIN_FILENO, &buf, 1) > 0 && buf != '\n')
-                    continue;
-                break;
-            }
-
-            if (fds[1].revents & POLLIN) {
-
-                /* Fanotify events are available */
-
-                handle_events(fd);
-            }
-        }
-    }
-
     printf("Listening for events stopped.\n");
     exit(EXIT_SUCCESS);
 }
+
+/*
+#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/asio/write.hpp>
+#include <cstdio>
+
+using boost::asio::ip::tcp;
+using boost::asio::awaitable;
+using boost::asio::co_spawn;
+using boost::asio::detached;
+using boost::asio::use_awaitable;
+namespace this_coro = boost::asio::this_coro;
+
+#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
+# define use_awaitable \
+  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
+#endif
+
+int main()
+{
+  try
+  {
+    boost::asio::io_context io_context(1);
+
+    boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);
+    signals.async_wait([&](auto, auto){ io_context.stop(); });
+
+    co_spawn(io_context, listener(), detached);
+
+    io_context.run();
+  }
+  catch (std::exception& e)
+  {
+    std::printf("Exception: %s\n", e.what());
+  }
+}
+
+////
+
+start_new_group(ioservice, yield_context yield)
+{
+   FanotifyGroup new_group(ioservice);
+   new_group.asyncEvent(yeild);
+}
+
+
+spawn(ioservice, [ioservice](yield_context yield)
+                 {start_new_group(ioservice, yield);})
+
+ioservice.run();
+ */

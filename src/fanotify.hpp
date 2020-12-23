@@ -59,7 +59,8 @@ class FanotifyGroup
 public:
     FanotifyGroup(boost::asio::io_context& context, unsigned int event_flags);
 
-    //~FanotifyGroup();
+    FanotifyGroup(FanotifyGroup&&) = default;
+    ~FanotifyGroup() = default;
     
     FanotifyGroup(const FanotifyGroup&) = delete;
     FanotifyGroup& operator=(const FanotifyGroup&) = delete;

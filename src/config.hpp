@@ -36,7 +36,7 @@ public:
     
 private:
     Config()
-        : m_config_file("config.cfg")
+        : m_config_file("/etc/fad.conf")
         , m_is_daemon(false)
     {}
     ///:note: all private method are not thread safe

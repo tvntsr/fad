@@ -63,7 +63,7 @@ void Config::openConfigFile()
          "path and log file name")
         ("loglevel",
          po::value<std::string>()->default_value("Debug"),
-         "Log level, values are: Fatal, Error, Warn, Debug")
+         "Log level, values are: Fatal, Error, Warn, Info, Debug")
         ("daemon", 
          po::value<bool>()->default_value(false),
          "program acts as daemon");

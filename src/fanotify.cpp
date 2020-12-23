@@ -1,16 +1,16 @@
+#include <limits.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
-#include <poll.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <poll.h>
+
 #include <sys/fanotify.h>
-#include <unistd.h>
 
-
-#include <string>
 #include <filesystem>
 #include <fstream>
+#include <string>
 #include <vector>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -18,7 +18,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include <boost/asio/read_until.hpp>
-#include <boost/asio/buffer.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/read.hpp>
 
@@ -33,14 +33,6 @@ struct MetadataWorker
         : m_notify_fd(notify_fd)
     {}
     
-    // void makeProcPath(char* procfd_path, size_t max_len, int fd, const char* mask)
-    // {
-    //     /* Retrieve and print pathname of the accessed file */
-    //     snprintf(procfd_path, sizeof(procfd_path),
-    //              mask,
-    //              fd);
-    // }
-
     std::pair<int, int> parseProc(int pid, io::yield_context& yield)
     {
         fs::path p = "/proc";
@@ -53,39 +45,44 @@ struct MetadataWorker
         }
 
         std::string line;
-        boost::asio::dynamic_string_buffer input_buffer(line);
-        //std::ifstream fproc(p);
+        boost::asio::streambuf input_buffer;
+
         boost::asio::posix::stream_descriptor file_reader(m_notify_fd.get_executor(),
                                                           open(p.string().c_str(), O_RDONLY));
 
-        for (;  0 < boost::asio::async_read_until(file_reader, input_buffer, '\n', yield); )
-        // read until you reach the end of the file
-//        for (std::string line; std::getline(fproc, line); )
+        fprintf(stderr, "Reading %s\n", p.string().c_str());
+        size_t len;
+        do
         {
-            if (boost::starts_with(line, "Uid"))
+            len = boost::asio::async_read_until(file_reader, input_buffer, '\n', yield);
+            if (len > 0)
             {
-                std::vector<std::string> parsed_record;
-                boost::split(parsed_record, line, boost::is_any_of(" \t"));
-                //fproc.close();
-            
-                return std::make_pair(std::stoi(parsed_record[1]), std::stoi(parsed_record[2]));
+                fprintf(stderr, "Read %d bytes\n", len);
+                std::istream is(&input_buffer);
+                for (std::string line; std::getline(is, line); )
+                {
+                    fprintf(stderr, "Line [%s], len %d\n", line.c_str(), len);
+                    if (boost::starts_with(line, "Uid"))
+                    {
+                        std::vector<std::string> parsed_record;
+                        boost::split(parsed_record, line, boost::is_any_of(" \t"));
+                        return std::make_pair(std::stoi(parsed_record[1]), std::stoi(parsed_record[2]));
+                    }
+                }
             }
         }
+        while(len > 0);
     
         return std::make_pair(-1, -1);
     }
    
     void operator()(const fanotify_event_metadata *metadata, ssize_t len, io::yield_context& yield)
     {
-        // char procfd_path[PATH_MAX];
-        // char path[PATH_MAX];
-
-        // ssize_t path_len;
         fprintf(stderr, "Start operator()");
-        /* Loop over all events in the buffer */
+        // Loop over all events in the buffer
         while (FAN_EVENT_OK(metadata, len))
         {
-            /* Check that run-time and compile-time structures match */
+            // Check that run-time and compile-time structures match
             if (metadata->vers != FANOTIFY_METADATA_VERSION)
             {
                 throw FanotifyGroupError("mismatch of fanotify metadata version", errno);
@@ -97,13 +94,48 @@ struct MetadataWorker
 
             if (metadata->fd >= 0)
             {
+                if (metadata->mask & FAN_ACCESS)
+                    printf("A file or a directory (but see BUGS) was accessed (read).");
+                if (metadata->mask & FAN_OPEN)
+                    printf("A file or a directory was opened.");
+                if (metadata->mask & FAN_OPEN_EXEC)
+                    printf("A file was opened with the intent to be executed.");
+                if (metadata->mask & FAN_ATTRIB)
+                    printf("A file or directory metadata was changed.");
+                if (metadata->mask & FAN_CREATE)
+                    printf("A child file or directory was created in a watched parent.");
+                if (metadata->mask & FAN_DELETE)
+                    printf("A child file or directory was deleted in a watched parent.");
+                if (metadata->mask & FAN_DELETE_SELF)
+                    printf("A watched file or directory was deleted.");
+                if (metadata->mask & FAN_MOVED_FROM)
+                    printf("A file or directory has been moved from a watched parent directory.");
+                if (metadata->mask & FAN_MOVED_TO)
+                    printf("A file or directory has been moved to a watched parent directory.");
+                if (metadata->mask & FAN_MOVE_SELF)
+                    printf("A watched file or directory was moved.");
+                if (metadata->mask & FAN_MODIFY)
+                    printf("A file was modified.");
+                if (metadata->mask & FAN_CLOSE_WRITE)
+                    printf("A file that was opened for writing (O_WRONLY or O_RDWR) was closed.");
+                if (metadata->mask & FAN_CLOSE_NOWRITE)
+                    printf("A file or directory that was opened read-only (O_RDONLY) was closed.");
+                if (metadata->mask & FAN_Q_OVERFLOW)
+                    printf("The event queue exceeded the limit of entries.");
+                if (metadata->mask & FAN_ACCESS_PERM)
+                    printf("An application wants to read a file or directory, for example using read(2) or readdir(2).");
+                if (metadata->mask & FAN_OPEN_PERM)
+                    printf("An application wants to open a file or directory.");
+                if (metadata->mask & FAN_OPEN_EXEC_PERM)
+                    printf("An  application  wants  to  open a file for execution.");
+
                 /* Handle open permission event */
                 if (metadata->mask & FAN_OPEN_PERM)
                 {
                     printf("FAN_OPEN_PERM: ");
 
                     struct fanotify_response response;
-                    /* Allow file to be opened */
+                    // Allow file to be opened 
                     response.fd = metadata->fd;
                     response.response = FAN_ALLOW;
                     write(m_notify_fd.native_handle(), &response,
@@ -131,27 +163,15 @@ struct MetadataWorker
                     throw std::runtime_error("link does not exists");
                 }
 
-                // snprintf(procfd_path, sizeof(procfd_path),
-                //          "/proc/self/fd/%d", metadata->fd);
-
                 auto path = fs::read_symlink(p);
-                // path_len = readlink(procfd_path, path,
-                //                     sizeof(path) - 1);
-                // if (path_len == -1) {
-                //     perror("readlink");
-                //     exit(EXIT_FAILURE);
-                // }
-
-                // path[path_len] = '\0';
                 printf("File %s\n", path.string().c_str());
 
-                /* Close the file descriptor of the event */
+                // Close the file descriptor of the event
 
                 close(metadata->fd);
             }
 
-            /* Advance to next event */
-
+            // Advance to next event
             metadata = FAN_EVENT_NEXT(metadata, len);
         }
 
@@ -216,6 +236,8 @@ void FanotifyGroup::asyncEvent(io::yield_context& yield)
     struct fanotify_event_metadata buf[200];
     ssize_t len;
 
+    MetadataWorker worker(m_notify_fd);
+
     fprintf(stderr, "FAN_START\n");
     // do some fun
     for(;;)
@@ -223,7 +245,6 @@ void FanotifyGroup::asyncEvent(io::yield_context& yield)
         // Read some events
         fprintf(stderr, "FAN_LOOP, fd %d\n", m_notify_fd.native_handle());
 
-        //len = read(m_notify_fd.native_handle(), (void *) &buf, sizeof(buf));
         boost::system::error_code ec;
         len = m_notify_fd.async_read_some(io::buffer(buf), yield[ec]);
         
@@ -231,21 +252,14 @@ void FanotifyGroup::asyncEvent(io::yield_context& yield)
         {
             throw FanotifyGroupError("read error", errno);
         }
-        /* Check if end of available data reached */
+        // Check if end of available data reached
         if (len <= 0)
-            break;
+            return;//break;
 
         fprintf(stderr, "FAN_LOOP, got event\n");
-        /* Point to the first event in the buffer */
+        // Point to the first event in the buffer
         metadata = buf;
-
-        boost::asio::spawn(m_context, [&](boost::asio::yield_context yield)
-                                       {
-                                           MetadataWorker worker(m_notify_fd);
-                                           worker(metadata, len, yield);
-                                       }
-            );
-
-
+        
+        worker(metadata, len, yield);
     }
 }

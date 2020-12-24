@@ -24,7 +24,6 @@
 
 #include "fanotify.hpp"
 #include "log.hpp"
-#include "metadataworker.hpp"
 #include "fanotifyerror.hpp"
 
 namespace io = boost::asio;
@@ -79,37 +78,3 @@ void FanotifyGroup::flushMark(const std::string& dir, int mask)
 
 }
 
-void FanotifyGroup::asyncEvent(io::yield_context& yield)
-{
-    const struct fanotify_event_metadata *metadata;
-    struct fanotify_event_metadata buf[200];
-    ssize_t len;
-
-    MetadataWorker worker(m_notify_fd);
-
-    fprintf(stderr, "FAN_START\n");
-    // do some fun
-    for(;;)
-    {
-        // Read some events
-        LogDebug("FAN_LOOP, fd " << m_notify_fd.native_handle());
-
-        boost::system::error_code ec;
-        len = m_notify_fd.async_read_some(io::buffer(buf), yield[ec]);
-        
-        if (len == -1 && errno != EAGAIN)
-        {
-            throw FanotifyGroupError("read error", errno);
-        }
-        // Check if end of available data reached
-        if (len <= 0)
-            return;//break;
-
-        LogDebug("FAN_LOOP, got event");
-        
-        // Point to the first event in the buffer
-        metadata = buf;
-        
-        worker(metadata, len, yield);
-    }
-}

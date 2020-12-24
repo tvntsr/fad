@@ -24,6 +24,7 @@
 #include "config.hpp"
 #include "log.hpp"
 #include "fanotify.hpp"
+#include "metadataworker.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -92,7 +93,7 @@ main(int argc, char *argv[])
 
         }
         boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)
-                                       {f_group.asyncEvent(yield);});
+                                       {f_group.asyncEvent<MetadataWorker>(yield);});
 
         LogInfo("Listening for events");
 

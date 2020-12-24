@@ -7,7 +7,7 @@ LDLIBS = -lboost_coroutine -lboost_context -lboost_program_options -lboost_syste
 
 TARGET_DIR = /usr/local/bin/
 
-SRCS=fad.cpp log.cpp config.cpp fanotify.cpp
+SRCS=fad.cpp log.cpp config.cpp fanotify.cpp metadataworker.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
 
 .PHONY: all

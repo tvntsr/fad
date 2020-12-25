@@ -10,6 +10,7 @@
 
 #include "log.hpp"
 #include "fanotifyerror.hpp"
+#include "report.hpp"
 
 class FanotifyGroup
 {
@@ -27,7 +28,7 @@ public:
     void flushMark(const std::string& dir, int mask);
 
     template<class Worker>
-    void asyncEvent(boost::asio::yield_context& yield);
+    void asyncEvent(FadReport& report, boost::asio::yield_context& yield);
     
 private:
     boost::asio::io_context& m_context;
@@ -35,7 +36,7 @@ private:
 };
 
 template<class Worker>
-void FanotifyGroup::asyncEvent(boost::asio::yield_context& yield)
+void FanotifyGroup::asyncEvent(FadReport& report, boost::asio::yield_context& yield)
 {
     const struct fanotify_event_metadata *metadata;
     struct fanotify_event_metadata buf[200];
@@ -65,8 +66,26 @@ void FanotifyGroup::asyncEvent(boost::asio::yield_context& yield)
         
         // Point to the first event in the buffer
         metadata = buf;
-        
-        worker(metadata, len, yield);
+
+        // Loop over all events in the buffer
+        while (FAN_EVENT_OK(metadata, len))
+        {
+            try
+            {
+                auto to_report = worker(metadata, len, yield);
+
+                boost::asio::spawn(m_context, [&](boost::asio::yield_context yield)
+                                              {
+                                                  report.makeReport(yield, to_report);
+                                              });
+            }
+            catch(FanotifyNoDataError& e)
+            {
+                //skip it, watch the next item
+            }
+            metadata = FAN_EVENT_NEXT(metadata, len);
+        }
+
     }
 };
 

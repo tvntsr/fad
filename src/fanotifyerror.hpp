@@ -49,4 +49,20 @@ private:
     }
 };
 
+
+class FanotifyNoDataError : public std::exception
+{
+public:
+    FanotifyNoDataError()
+    {
+    }
+
+    ~FanotifyNoDataError() noexcept
+    {}
+
+    const char* what() const noexcept
+    {
+        return "No data available";
+    }
+};
 #endif //_FAD_FANOTIFY_GROUP_ERROR_HPP

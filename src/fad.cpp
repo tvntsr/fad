@@ -75,10 +75,11 @@ main(int argc, char *argv[])
         daemonizeIfConfigured(config);
 
         LogInfo("Started");
-
-        FadReport report("example");
         
         boost::asio::io_context io_context;
+
+        FadReport report(io_context, config.getValue<std::string>("report"));
+
         boost::asio::signal_set signals(io_context, SIGUSR1, SIGINT, SIGTERM);
         std::function<void (const boost::system::error_code&, const int&)> sig_handler =
             [&](const boost::system::error_code& err, const int& sig)
@@ -87,6 +88,7 @@ main(int argc, char *argv[])
                                {
                                    case SIGUSR1:
                                        rotateLog();
+                                       report.reportRotate();
                                        break;
                                    case SIGINT:
                                    case SIGTERM:
@@ -96,6 +98,8 @@ main(int argc, char *argv[])
                                signals.async_wait(sig_handler); // set up it again
                            };
         signals.async_wait(sig_handler);
+
+
 
         // Create the file descriptor for accessing the fanotify API
         FanotifyGroup f_group(io_context, FAN_CLOEXEC | FAN_CLASS_NOTIF /*| FAN_NONBLOCK*/);
@@ -109,16 +113,13 @@ main(int argc, char *argv[])
                file descriptor */
             LogInfo("Will be watching " << i);
             f_group.addMark(i, FAN_ACCESS | FAN_MODIFY | FAN_CLOSE_WRITE | FAN_ONDIR  );
-
         }
 
-        // Test
-        //report.makeReport("This is report like like like", 1, 2, 3, 2.0);
-        report.makeReport("This is report like like like");
+      
         //
         
         boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)
-                                       {f_group.asyncEvent<MetadataWorker>(yield);});
+                                       {f_group.asyncEvent<MetadataWorker>(report, yield);});
 
         LogInfo("Listening for events");
 

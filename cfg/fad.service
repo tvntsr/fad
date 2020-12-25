@@ -1,0 +1,17 @@
+[Unit]
+Description=File Access Daemon
+Requires=network.target
+
+[Service]
+Type=simple
+Environment="LD_LIBRARY_PATH=/usr/local/lib"
+WorkingDirectory=/home/pi/walkie-talkie/python
+ExecStart=/usr/local/bin/fad
+Restart=always
+TimeoutStopSec=10
+SendSIGKILL=yes
+RestartSec=30s
+
+[Install]
+WantedBy=multi-user.target
+Alias=fad.service

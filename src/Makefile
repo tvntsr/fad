@@ -32,10 +32,10 @@ distclean: clean
 
 .PHONY: install
 install:
-	cp $(BINS) $(TARGET_DIR)
+	cp fad $(TARGET_DIR)
 
 .PHONY: uninstall
 uninstall:
-	rm -f $(TARGET_DIR)$(BINS)
+	rm -f $(TARGET_DIR)fad
 
 include .depend

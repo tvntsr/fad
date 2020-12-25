@@ -75,6 +75,5 @@ void FanotifyGroup::flushMark(const std::string& dir, int mask)
     {
         throw FanotifyGroupError("fanotify_mark flush", errno);
     }
-
 }
 

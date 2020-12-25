@@ -66,10 +66,11 @@ void MetadataWorker::operator()(const fanotify_event_metadata *metadata, ssize_t
                 //write(fd, &response,
                 //      sizeof(struct fanotify_response));
             }
-
-            auto path = getRealFilePath(metadata);
             auto uids = parseProc(metadata->pid, yield);
             LogDebug("PID " << metadata->pid << ", " << uids.first << "/" << uids.second);
+
+            auto path = getRealFilePath(metadata->fd);
+            LogDebug("Path: " << path);
             printAccessType(metadata);
             // Handle closing of writable file event
 
@@ -126,10 +127,11 @@ void MetadataWorker::printAccessType(const fanotify_event_metadata *metadata)
         LogDebug("An  application  wants  to  open a file for execution.");
 }
     
-fs::path MetadataWorker::getRealFilePath(const fanotify_event_metadata *metadata)
+fs::path MetadataWorker::getRealFilePath(int fd)
 {
+    LogDebug("Reading file path, fd " << fd);
     fs::path p = "/proc/self/fd/";
-    p /= std::to_string(metadata->fd);
+    p /= std::to_string(fd);
     if (!fs::exists(p))
     {
         throw std::runtime_error("link does not exists");
@@ -140,15 +142,19 @@ fs::path MetadataWorker::getRealFilePath(const fanotify_event_metadata *metadata
     
 std::pair<std::string, std::string> MetadataWorker::parseProc(int pid, io::yield_context& yield)
 {
+    LogDebug("Reading proc, pid " << pid);
+    
     fs::path p = "/proc";
     p /= std::to_string(pid);
     p /= "status";
-        
+
+    LogDebug("Checking file " << p);
     if (!fs::exists(p))
     {
         throw std::runtime_error("File does not exists");
     }
 
+    LogDebug("Go " << p);
     std::string line;
     boost::asio::streambuf input_buffer;
 

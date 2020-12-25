@@ -21,7 +21,7 @@ public:
 private:
     void printAccessType(const fanotify_event_metadata *metadata);
     
-    std::filesystem::path getRealFilePath(const fanotify_event_metadata *metadata);
+    std::filesystem::path getRealFilePath(int fd);
     
     std::pair<std::string, std::string> parseProc(int pid, boost::asio::yield_context& yield);
    

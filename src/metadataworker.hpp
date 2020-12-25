@@ -3,6 +3,7 @@
 
 #include <sys/fanotify.h>
 
+#include <tuple>
 #include <string>
 #include <filesystem>
 
@@ -12,14 +13,25 @@
 class MetadataWorker
 {
 public:
+    typedef std::tuple<std::pair<std::string, std::string>,
+                       std::pair<std::string, std::string>,
+                       std::pair<std::string, int>,
+                       std::string,
+                       std::pair<std::string, std::string>>
+    DATA_RESULT;
+
+    
+public:
     MetadataWorker(boost::asio::posix::stream_descriptor& notify_fd)
         : m_notify_fd(notify_fd)
     {}
 
-    void operator()(const fanotify_event_metadata *metadata, ssize_t len, boost::asio::yield_context& yield);
+    // uid real, uid effective, pid, access type, comment
+    DATA_RESULT
+    operator()(const fanotify_event_metadata *metadata, ssize_t len, boost::asio::yield_context& yield);
 
 private:
-    void printAccessType(const fanotify_event_metadata *metadata);
+    std::pair<std::string, std::string> printAccessType(const fanotify_event_metadata *metadata);
     
     std::filesystem::path getRealFilePath(int fd);
     

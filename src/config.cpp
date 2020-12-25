@@ -59,11 +59,14 @@ void Config::openConfigFile()
          po::value<std::vector<std::string>>()->multitoken(),
          "directories to watch")
         ("logfile", 
-         po::value<std::string>()->default_value("data.log"),
+         po::value<std::string>()->default_value("fad.log"),
          "path and log file name")
         ("loglevel",
          po::value<std::string>()->default_value("Debug"),
          "Log level, values are: Fatal, Error, Warn, Info, Debug")
+        ("report", 
+         po::value<std::string>()->default_value("fad.report"),
+         "path and log file name")
         ("daemon", 
          po::value<bool>()->default_value(false),
          "program acts as daemon");

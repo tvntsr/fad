@@ -23,10 +23,17 @@ public:
     template<typename T>
     T getValue(const char* var) const
     {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        T t = m_vm[var].as<T>();
+        try
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            T t = m_vm[var].as<T>();
 
-        return t;
+            return t;
+        }
+        catch(boost::bad_any_cast& err)
+        {
+            throw std::invalid_argument(std::string("wrong value: ") + var);
+        }
     }
 
     bool isDaemon() const

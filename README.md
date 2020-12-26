@@ -4,6 +4,7 @@
 To get FAD bult correctly the following dependencies should be met:
 * g++ 9.3.0 or up
 * Boost libraries 1.71 or up
+
 The following BOOST libraries are used:
 * Boost ASIO
 * Program options
@@ -22,14 +23,14 @@ There is fad.service unit file, which is installed on `make install` and removed
 ## configuration file
 Symple ini-based text file, by default should be listed /etc/
 
-   daemon=true
-   pidfile=/var/run/fad.pid
-   logfile=/var/log/fad.log
-   loglevel=Debug
-   report=/var/log/fad.report
-   watch=/tmp
-   watch=/var/tmp
-   watch=/etc
+       daemon=true
+       pidfile=/var/run/fad.pid
+       logfile=/var/log/fad.log
+       loglevel=Debug
+       report=/var/log/fad.report
+       watch=/tmp
+       watch=/var/tmp
+       watch=/etc
 
 ### daemon
 Act as daemon, true or false

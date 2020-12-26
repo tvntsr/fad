@@ -66,13 +66,21 @@ void Config::openConfigFile()
          "Log level, values are: Fatal, Error, Warn, Info, Debug")
         ("report", 
          po::value<std::string>()->default_value("fad.report"),
-         "path and log file name")
+         "path and report file name")
+        ("pidfile", 
+         po::value<std::string>()->default_value("fad.pid"),
+         "path and pid file name")
         ("daemon", 
          po::value<bool>()->default_value(false),
          "program acts as daemon");
-    
+
     po::store(po::parse_config_file<char>(m_config_file.c_str(), cfg), m_vm);
     po::notify(m_vm);
+
+    if (!m_is_daemon)
+    {
+        m_is_daemon = m_vm["daemon"].as<bool>();
+    }
 }
 
 bool Config::applyConfig()

@@ -51,8 +51,6 @@ private:
     bool applyConfig();
     /// reads cfg file
     void openConfigFile();
-    /// init Log
-    //void openLogFile();
 
 private:
     std::string  m_config_file;

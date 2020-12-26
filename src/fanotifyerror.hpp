@@ -4,6 +4,8 @@
 #include <string>
 #include <exception>
 
+
+/// Main error, it could be critical
 class FanotifyGroupError : public std::exception
 {
     std::string m_message;
@@ -50,6 +52,7 @@ private:
 };
 
 
+/// No data availabe for some reason, such error could be skipped on upper level
 class FanotifyNoDataError : public std::exception
 {
 public:
@@ -65,4 +68,5 @@ public:
         return "No data available";
     }
 };
+
 #endif //_FAD_FANOTIFY_GROUP_ERROR_HPP

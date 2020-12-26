@@ -13,9 +13,13 @@
 
 #include "log.hpp"
 
+
+/// reports about fa event
 class FadReport
 {
 public:
+    /// boost::asio::io_context used as async engine to file operations,
+    /// filename - file to write report
     FadReport(boost::asio::io_context& context, const std::string& filename)
         : m_file_name(filename)
         , m_file_writer(context)
@@ -28,6 +32,7 @@ public:
         m_file_writer.assign(fd);
     }
 
+    /// close report file and open it again
     void reportRotate()
     {
         //int old = m_file_writer.native_handle();
@@ -43,6 +48,7 @@ public:
         LogInfo("Report rotated");
     }
 
+    /// creates the report line and print it to file
     template<typename... Rest>
     void makeReport(boost::asio::yield_context yield, const std::tuple<Rest...>& item)
     {
@@ -50,6 +56,7 @@ public:
         report << time_stamp("Y-M-D h:m:s.u") << ": ";
         bool tab = false;
 
+        // walk thru the tuple
         std::apply([&](auto&&... s){
                 ((
                     reportItem(report, tab, std::forward<decltype(s)>(s))

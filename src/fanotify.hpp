@@ -12,21 +12,29 @@
 #include "fanotifyerror.hpp"
 #include "report.hpp"
 
+/// clas to work with fanotifi Linux interface, man 7 fanotify
 class FanotifyGroup
 {
 public:
+    /// asio's io_context is used as engine, event_flags flags passed to fanotify
     FanotifyGroup(boost::asio::io_context& context, unsigned int event_flags);
 
     FanotifyGroup(FanotifyGroup&&) = default;
     ~FanotifyGroup() = default;
-    
+
+    /// copying is not supported
     FanotifyGroup(const FanotifyGroup&) = delete;
     FanotifyGroup& operator=(const FanotifyGroup&) = delete;
-    
+
+    /// add watched dir, set the mark
     void addMark(const std::string& dir, int mask);
+    /// will be removed from the mark mask
     void removeMark(const std::string& dir, int mask);
+    /// Remove  either  all  marks for filesystems, all marks for mounts,
+    /// or all marks for directories and files from the fanotify group
     void flushMark(const std::string& dir, int mask);
 
+    /// main engine, runs report on recevied event
     template<class Worker>
     void asyncEvent(FadReport& report, boost::asio::yield_context& yield);
     
@@ -44,7 +52,6 @@ void FanotifyGroup::asyncEvent(FadReport& report, boost::asio::yield_context& yi
 
     Worker worker(m_notify_fd);
 
-    fprintf(stderr, "FAN_START\n");
     // do some fun
     for(;;)
     {

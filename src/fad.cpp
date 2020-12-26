@@ -114,11 +114,10 @@ main(int argc, char *argv[])
                - notification events after closing a write-enabled
                file descriptor */
             LogInfo("Will be watching " << i);
-            f_group.addMark(i, FAN_ACCESS | FAN_MODIFY | FAN_CLOSE_WRITE | FAN_ONDIR  );
+            f_group.addMark(i,
+                            FAN_ACCESS | FAN_OPEN        | FAN_OPEN_EXEC     | 
+                            FAN_MODIFY | FAN_CLOSE_WRITE | FAN_CLOSE_NOWRITE | FAN_ONDIR);
         }
-
-      
-        //
         
         boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)
                                        {f_group.asyncEvent<MetadataWorker>(report, yield);});

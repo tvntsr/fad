@@ -26,7 +26,7 @@
 #include "fanotify.hpp"
 #include "metadataworker.hpp"
 #include "report.hpp"
-
+#include "pid.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -74,6 +74,8 @@ main(int argc, char *argv[])
         
         daemonizeIfConfigured(config);
 
+        Pid pid(config.getValue<std::string>("pidfile"));
+        
         LogInfo("Started");
         
         boost::asio::io_context io_context;

@@ -5,7 +5,6 @@ Requires=network.target
 [Service]
 Type=simple
 Environment="LD_LIBRARY_PATH=/usr/local/lib"
-WorkingDirectory=/home/pi/walkie-talkie/python
 ExecStart=/usr/local/bin/fad
 Restart=always
 TimeoutStopSec=10

@@ -3,8 +3,8 @@ Description=File Access Daemon
 Requires=network.target
 
 [Service]
-Type=simple
-Environment="LD_LIBRARY_PATH=/usr/local/lib"
+Type=forking
+PIDFile=/var/run/fad.pid
 ExecStart=/usr/local/bin/fad
 Restart=always
 TimeoutStopSec=10

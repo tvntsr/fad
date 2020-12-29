@@ -47,6 +47,11 @@
 namespace fs = std::filesystem;
 using namespace std;
 
+auto EVENT_TO_SUBSRIBE = FAN_ACCESS    | FAN_MODIFY      | FAN_CLOSE_WRITE | FAN_CLOSE_NOWRITE |
+                         FAN_OPEN      | FAN_OPEN_EXEC   | FAN_ATTRIB      | FAN_CREATE        |
+                         FAN_DELETE    | FAN_DELETE_SELF | FAN_MOVED_FROM  | FAN_MOVED_TO      |
+                         FAN_MOVE_SELF;
+
 static void
 daemonizeIfConfigured(const Config& cfg)
 {
@@ -60,6 +65,8 @@ daemonizeIfConfigured(const Config& cfg)
             LogFatal("Cannot daemonize...");
         }
     }
+    else
+        (void)!chdir("/"); // Set working dir to '/' always
 }
 
 static void
@@ -120,7 +127,7 @@ main(int argc, char *argv[])
 
 
         // Create the file descriptor for accessing the fanotify API
-        FanotifyGroup f_group(io_context, FAN_CLOEXEC | FAN_CLASS_NOTIF /*| FAN_NONBLOCK*/);
+        FanotifyGroup f_group(io_context, FAN_CLOEXEC | FAN_REPORT_FID | FAN_CLASS_NOTIF | FAN_NONBLOCK);
 
         auto watches = config.getValue<vector<string>>("watch");
         for (auto& i: watches)
@@ -130,9 +137,8 @@ main(int argc, char *argv[])
                - notification events after closing a write-enabled
                file descriptor */
             LogInfo("Will be watching " << i);
-            f_group.addMark(i,
-                            FAN_ACCESS | FAN_OPEN        | FAN_OPEN_EXEC     | 
-                            FAN_MODIFY | FAN_CLOSE_WRITE | FAN_CLOSE_NOWRITE | FAN_ONDIR);
+//            f_group.addMark(i, EVENT_TO_SUBSRIBE | FAN_ONDIR);
+            f_group.addMark(i, EVENT_TO_SUBSRIBE | FAN_EVENT_ON_CHILD | FAN_ONDIR);
         }
         
         boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)

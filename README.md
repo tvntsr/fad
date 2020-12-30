@@ -11,14 +11,37 @@ The following BOOST libraries are used:
 * String algorithms
 
 ## Build
-There is a makefile and the following targets are supported:
-- all
-- clean
-- install
-- uninstall
+CMake is used to build, the following steps should be done
+
+    mkdir build
+    cd build
+    cmake ../
+    make all
+
+## install
+To install run the following fron build directroy
+
+    sudo make install
+
+This step installs all config as well as enabling systemd's fad service
+
+
+## Uninstall
+To uninstall fad do the following steps
+
+    sudo systemctl stop fad
+    sudo systemctl disable fad
+    sudo systemctl daemon-reload
+
+    xargs rm < install_manifest.txt
 
 ## systemd
-There is fad.service unit file, which is installed on `make install` and removed on `make uninstall`
+There is fad.service unit file, which is installed on `make install` To disable fad service run the following code
+
+    sudo systemctl stop fad
+    sudo systemctl disable fad
+    sudo systemctl daemon-reload
+
 
 ## signal handling
 The following signals are catched: SIGUSR1, SIGINT, SIGTERM

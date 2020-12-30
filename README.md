@@ -20,6 +20,20 @@ There is a makefile and the following targets are supported:
 ## systemd
 There is fad.service unit file, which is installed on `make install` and removed on `make uninstall`
 
+## signal handling
+The following signals are catched: SIGUSR1, SIGINT, SIGTERM
+
+### SIGUSR1
+Log and report files are closed, and opened again. To get logs rotated, do
+
+    mv /var/log/fad.log /var/log/fad.log.1 && 
+    mv /var/log/fad.report /var/log/fad.report.1 &&
+    kill -USR1 `cat /var/run/fad.pid`
+
+
+### SIGINT, SIGTERM
+Terminates the program
+
 ## configuration file
 Symple ini-based text file, by default should be listed /etc/
 

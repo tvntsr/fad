@@ -31,6 +31,16 @@
 #include "fanotifyerror.hpp"
 #include "autoclosefd.hpp"
 
+struct FanMaskMapping
+{
+    int mask;
+    bool input_allowed;
+    std::string access;
+    std::string comment;
+};
+
+extern std::array<FanMaskMapping, 17> mask_mapping;
+
 class MetadataWorker
 {
 public:

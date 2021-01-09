@@ -56,32 +56,6 @@ auto PATH_EVENTS   = FAN_ACCESS | FAN_MODIFY | FAN_CLOSE | FAN_OPEN | FAN_OPEN_E
 auto DIRENT_EVENTS = FAN_MOVE | FAN_CREATE | FAN_DELETE;
 auto INODE_EVENTS  = DIRENT_EVENTS | FAN_ATTRIB | FAN_MOVE_SELF | FAN_DELETE_SELF;
 
-struct StringToEvent
-{
-    std::string event_name;
-    int event_value;
-    bool supported;
-}
-    AllowedEvents[] = {
-        {"ACCESS",        FAN_ACCESS},
-        {"MODIFY",        FAN_MODIFY},
-        {"CLOSE_WRITE",   FAN_CLOSE_WRITE},
-        {"CLOSE_NOWRITE", FAN_CLOSE_NOWRITE},
-        {"OPEN",          FAN_OPEN},
-        {"OPEN_EXEC",     FAN_OPEN_EXEC},
-        {"ATTRIB",        FAN_ATTRIB},
-        {"CREATE",        FAN_CREATE},
-        {"DELETE",        FAN_DELETE},
-        {"DELETE_SELF",   FAN_DELETE_SELF},
-        {"MOVED_FROM",    FAN_MOVED_FROM},
-        {"MOVED_TO",      FAN_MOVED_TO},
-        {"MOVE_SELF",     FAN_MOVE_SELF},
-        {"ALL",           ALL_EVENTS},
-        {"PATH_EVENTS",   PATH_EVENTS},
-        {"DIRENT_EVENTS", DIRENT_EVENTS},
-        {"INODE_EVENTS",  INODE_EVENTS}
-    };
-
 static int
 parseRequestedEvents(const std::string& requested_events)
 {
@@ -96,12 +70,15 @@ parseRequestedEvents(const std::string& requested_events)
         boost::algorithm::trim(i);
         boost::to_upper(i);
 
-        for (auto &r: AllowedEvents)
+        for (auto &r: mask_mapping)
         {
-            if (r.event_name != i)
+            if (r.access != i)
                 continue;
+
+            if (!r.input_allowed)
+                throw std::invalid_argument(std::string("event not allowed:") + r.access);
             
-            events |= r.event_value;
+            events |= r.mask;
             break;
         }
     }

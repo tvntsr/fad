@@ -32,29 +32,26 @@
 namespace io = boost::asio;
 namespace fs = std::filesystem;
 
-struct FanMaskMapping
-{
-    int mask;
-    std::string access;
-    std::string comment;
-} mask_mapping[] = {
-    { FAN_ACCESS,         "ACCESS",         "A file or a directory (but see BUGS) was accessed (read)."},
-    { FAN_OPEN,           "OPEN",           "A file or a directory was opened."},
-    { FAN_OPEN_EXEC,      "OPEN_EXEC",      "A file was opened with the intent to be executed."},
-    { FAN_ATTRIB,         "ATTRIB",         "A file or directory metadata was changed."},
-    { FAN_CREATE,         "CREATE",         "A child file or directory was created in a watched parent."},
-    { FAN_DELETE,         "DELETE",         "A child file or directory was deleted in a watched parent."},
-    { FAN_DELETE_SELF,    "DELETE_SELF",    "A watched file or directory was deleted."},
-    { FAN_MOVED_FROM,     "MOVED_FROM",     "A file or directory has been moved from a watched parent directory."},
-    { FAN_MOVED_TO,       "FAN_MOVED_TO",   "A file or directory has been moved to a watched parent directory."},
-    { FAN_MOVE_SELF,      "MOVE_SELF",      "A watched file or directory was moved."},
-    { FAN_MODIFY,         "MODIFY",         "A file was modified."},
-    { FAN_CLOSE_WRITE,    "CLOSE_WRITE",    "A file that was opened for writing (O_WRONLY or O_RDWR) was closed."},
-    { FAN_CLOSE_NOWRITE,  "CLOSE_NOWRITE",  "A file or directory that was opened read-only (O_RDONLY) was closed."},
-    { FAN_Q_OVERFLOW,     "Q_OVERFLOW",     "The event queue exceeded the limit of entries."},
-    { FAN_ACCESS_PERM,    "ACCESS_PERM",    "An application wants to read a file or directory, for example using read(2) or readdir(2)."},
-    { FAN_OPEN_PERM,      "OPEN_PERM",      "An application wants to open a file or directory."},
-    { FAN_OPEN_EXEC_PERM, "OPEN_EXEC_PERM", "An  application  wants  to  open a file for execution."}
+std::array<FanMaskMapping, 17>
+mask_mapping = { {
+    { FAN_ACCESS,         true,  "ACCESS",         "A file or a directory (but see BUGS) was accessed (read)."},
+    { FAN_OPEN,           true,  "OPEN",           "A file or a directory was opened."},
+    { FAN_OPEN_EXEC,      true,  "OPEN_EXEC",      "A file was opened with the intent to be executed."},
+    { FAN_ATTRIB,         true,  "ATTRIB",         "A file or directory metadata was changed."},
+    { FAN_CREATE,         true,  "CREATE",         "A child file or directory was created in a watched parent."},
+    { FAN_DELETE,         true,  "DELETE",         "A child file or directory was deleted in a watched parent."},
+    { FAN_DELETE_SELF,    true,  "DELETE_SELF",    "A watched file or directory was deleted."},
+    { FAN_MOVED_FROM,     true,  "MOVED_FROM",     "A file or directory has been moved from a watched parent directory."},
+    { FAN_MOVED_TO,       true,  "FAN_MOVED_TO",   "A file or directory has been moved to a watched parent directory."},
+    { FAN_MOVE_SELF,      true,  "MOVE_SELF",      "A watched file or directory was moved."},
+    { FAN_MODIFY,         true,  "MODIFY",         "A file was modified."},
+    { FAN_CLOSE_WRITE,    true,  "CLOSE_WRITE",    "A file that was opened for writing (O_WRONLY or O_RDWR) was closed."},
+    { FAN_CLOSE_NOWRITE,  true,  "CLOSE_NOWRITE",  "A file or directory that was opened read-only (O_RDONLY) was closed."},
+    { FAN_Q_OVERFLOW,     false, "Q_OVERFLOW",     "The event queue exceeded the limit of entries."},
+    { FAN_ACCESS_PERM,    false, "ACCESS_PERM",    "An application wants to read a file or directory, for example using read(2) or readdir(2)."},
+    { FAN_OPEN_PERM,      false, "OPEN_PERM",      "An application wants to open a file or directory."},
+    { FAN_OPEN_EXEC_PERM, false, "OPEN_EXEC_PERM", "An  application  wants  to  open a file for execution."}
+    }
 };
 
 std::pair<std::string, std::string>

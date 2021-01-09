@@ -145,7 +145,7 @@ std::tuple<std::string, std::string, std::string> MetadataWorker::parseProc(int 
 }
 
 MetadataWorker::DATA_RESULT
-MetadataWorker::metadataParser(const fanotify_event_metadata *metadata, ssize_t len, io::yield_context& yield)
+MetadataWorker::metadataParser(const fanotify_event_metadata *metadata, io::yield_context& yield)
 {
     LogDebug("Start parsing metadata");
 
@@ -190,7 +190,7 @@ MetadataWorker::metadataParser(const fanotify_event_metadata *metadata, ssize_t 
 }
 
 MetadataWorker::DATA_RESULT
-MetadataWorker::fidMetadataParser(const fanotify_event_metadata *metadata, ssize_t len, io::yield_context& yield)
+MetadataWorker::fidMetadataParser(const fanotify_event_metadata *metadata, io::yield_context& yield)
 {
     LogDebug("Start parsing metadata and fid structure");
    

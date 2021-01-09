@@ -63,14 +63,14 @@ public:
 
     // uid real, uid effective, pid, access type, comment
     DATA_RESULT
-    operator()(const fanotify_event_metadata *metadata, ssize_t len, boost::asio::yield_context& yield)
+    operator()(const fanotify_event_metadata *metadata, boost::asio::yield_context& yield)
     {
         if (metadata->pid == m_pid)
             throw FanotifyNoDataError(); // skip myself
 
         return (metadata->event_len == FAN_EVENT_METADATA_LEN) ?
-            metadataParser(metadata, len, yield) :
-            fidMetadataParser(metadata, len, yield);
+            metadataParser(metadata, yield) :
+            fidMetadataParser(metadata, yield);
     }
 
 private:
@@ -82,10 +82,10 @@ private:
     parseProc(int pid, boost::asio::yield_context& yield);
 
     DATA_RESULT
-    metadataParser(const fanotify_event_metadata *metadata, ssize_t len, boost::asio::yield_context& yield);
+    metadataParser(const fanotify_event_metadata *metadata, boost::asio::yield_context& yield);
 
     DATA_RESULT
-    fidMetadataParser(const fanotify_event_metadata *metadata, ssize_t len, boost::asio::yield_context& yield);
+    fidMetadataParser(const fanotify_event_metadata *metadata, boost::asio::yield_context& yield);
 
     DATA_RESULT
     prepareDataResult(int pid,

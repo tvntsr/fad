@@ -40,7 +40,7 @@ struct AutoCloseFd
             close(m_fd);
     }
 
-    const int getFd() const noexcept
+    int getFd() const noexcept
     {
         return m_fd;
     }

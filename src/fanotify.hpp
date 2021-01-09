@@ -95,7 +95,7 @@ void FanotifyGroup::asyncEvent(FadReport& report, boost::asio::yield_context& yi
         {
             try
             {
-                auto to_report = worker(metadata, len, yield);
+                auto to_report = worker(metadata, yield);
 
                 boost::asio::spawn(m_context, [&](boost::asio::yield_context yield)
                                               {

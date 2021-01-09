@@ -159,7 +159,7 @@ main(int argc, char *argv[])
 
         boost::asio::signal_set signals(io_context, SIGUSR1, SIGINT, SIGTERM);
         std::function<void (const boost::system::error_code&, const int&)> sig_handler =
-            [&](const boost::system::error_code& err, const int& sig)
+            [&](__attribute__((unused)) const boost::system::error_code& err, const int& sig)
                            {
                                switch (sig)
                                {

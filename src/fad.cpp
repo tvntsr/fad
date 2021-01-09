@@ -47,10 +47,85 @@
 namespace fs = std::filesystem;
 using namespace std;
 
-auto EVENT_TO_SUBSRIBE = FAN_ACCESS    | FAN_MODIFY      | FAN_CLOSE_WRITE | FAN_CLOSE_NOWRITE |
-                         FAN_OPEN      | FAN_OPEN_EXEC   | FAN_ATTRIB      | FAN_CREATE        |
-                         FAN_DELETE    | FAN_DELETE_SELF | FAN_MOVED_FROM  | FAN_MOVED_TO      |
-                         FAN_MOVE_SELF;
+auto ALL_EVENTS = FAN_ACCESS    | FAN_MODIFY      | FAN_CLOSE_WRITE | FAN_CLOSE_NOWRITE |
+                  FAN_OPEN      | FAN_OPEN_EXEC   | FAN_ATTRIB      | FAN_CREATE        |
+                  FAN_DELETE    | FAN_DELETE_SELF | FAN_MOVED_FROM  | FAN_MOVED_TO      |
+                  FAN_MOVE_SELF;
+
+auto PATH_EVENTS   = FAN_ACCESS | FAN_MODIFY | FAN_CLOSE | FAN_OPEN | FAN_OPEN_EXEC;
+auto DIRENT_EVENTS = FAN_MOVE | FAN_CREATE | FAN_DELETE;
+auto INODE_EVENTS  = DIRENT_EVENTS | FAN_ATTRIB | FAN_MOVE_SELF | FAN_DELETE_SELF;
+
+struct StringToEvent
+{
+    std::string event_name;
+    int event_value;
+    bool supported;
+}
+    AllowedEvents[] = {
+        {"ACCESS",        FAN_ACCESS},
+        {"MODIFY",        FAN_MODIFY},
+        {"CLOSE_WRITE",   FAN_CLOSE_WRITE},
+        {"CLOSE_NOWRITE", FAN_CLOSE_NOWRITE},
+        {"OPEN",          FAN_OPEN},
+        {"OPEN_EXEC",     FAN_OPEN_EXEC},
+        {"ATTRIB",        FAN_ATTRIB},
+        {"CREATE",        FAN_CREATE},
+        {"DELETE",        FAN_DELETE},
+        {"DELETE_SELF",   FAN_DELETE_SELF},
+        {"MOVED_FROM",    FAN_MOVED_FROM},
+        {"MOVED_TO",      FAN_MOVED_TO},
+        {"MOVE_SELF",     FAN_MOVE_SELF},
+        {"ALL",           ALL_EVENTS},
+        {"PATH_EVENTS",   PATH_EVENTS},
+        {"DIRENT_EVENTS", DIRENT_EVENTS},
+        {"INODE_EVENTS",  INODE_EVENTS}
+    };
+
+static int
+parseRequestedEvents(const std::string& requested_events)
+{
+    if (requested_events.empty()) // all events
+        return ALL_EVENTS;
+
+    int events = 0;
+    std::vector<std::string> parsed_record;
+    boost::split(parsed_record, requested_events, boost::is_any_of("|"));
+    for (auto& i: parsed_record)
+    {
+        boost::algorithm::trim(i);
+        boost::to_upper(i);
+
+        for (auto &r: AllowedEvents)
+        {
+            if (r.event_name != i)
+                continue;
+            
+            events |= r.event_value;
+            break;
+        }
+    }
+
+    if (events == 0)
+        throw std::invalid_argument(std::string("bad events:")+requested_events);
+
+    return events;
+}
+
+static std::pair<std::string, unsigned int>
+parseWatchRecord(const std::string& watch_record)
+{
+    std::vector<std::string> parsed_record;
+    boost::split(parsed_record, watch_record, boost::is_any_of(":"));
+
+    if (parsed_record.size() > 2)
+        throw std::invalid_argument(std::string("bad watch record:")+watch_record);
+
+    boost::algorithm::trim(parsed_record[0]);
+    auto events = parsed_record.size() == 1 ? ALL_EVENTS : parseRequestedEvents(parsed_record[1]);
+    
+    return std::make_pair(parsed_record[0], events);
+}
 
 static void
 daemonizeIfConfigured(const Config& cfg)
@@ -132,13 +207,11 @@ main(int argc, char *argv[])
         auto watches = config.getValue<vector<string>>("watch");
         for (auto& i: watches)
         {
-            /* Mark the mount for:
-               - permission events before opening files
-               - notification events after closing a write-enabled
-               file descriptor */
-            LogInfo("Will be watching " << i);
+            // Mark the dir for event(s)
+            auto watch = parseWatchRecord(i);
+            LogInfo("Will be watching " << watch.first << " for " << watch.second);
 //            f_group.addMark(i, EVENT_TO_SUBSRIBE | FAN_ONDIR);
-            f_group.addMark(i, EVENT_TO_SUBSRIBE | FAN_EVENT_ON_CHILD | FAN_ONDIR);
+            f_group.addMark(watch.first, watch.second | FAN_EVENT_ON_CHILD | FAN_ONDIR);
         }
         
         boost::asio::spawn(io_context, [&](boost::asio::yield_context yield)

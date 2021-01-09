@@ -91,6 +91,53 @@ File to keep records about the access to the watched directories
 
 ### watch
 Directory to be watched, multiple values are allowed
+The syntax of the record is the following:
+
+    dir [: event [| event]]
+
+The following events are recognized:
+
+    * ACCESS
+      A file or a directory (but see BUGS) was accessed (read).
+    * MODIFY
+      A file was modified.
+    * CLOSE_WRITE
+      A file that was opened for writing (O_WRONLY or O_RDWR) was closed.
+    * CLOSE_NOWRITE
+      A file or directory that was opened read-only (O_RDONLY) was closed.
+    * OPEN
+      A file or a directory was opened.
+    * OPEN_EXEC
+      A file was opened with the intent to be executed.
+    * ATTRIB
+      A file or directory metadata was changed.
+    * CREATE
+      A child file or directory was created in a watched parent.
+    * DELETE
+      A child file or directory was deleted in a watched parent.
+    * DELETE_SELF
+      A watched file or directory was deleted.
+    * MOVED_FROM
+      A file or directory has been moved from a watched parent directory.
+    * MOVED_TO
+      A file or directory has been moved to a watched parent directory.
+    * MOVE_SELF
+      A watched file or directory was moved.
+
+The following event are defined for convenience:
+    * ALL
+      all possible events
+    * PATH_EVENTS
+      ACCESS | MODIFY | CLOSE | OPEN | OPEN_EXEC
+    * DIRENT_EVENTS
+      MOVE | CREATE | DELETE
+    * INODE_EVENTS
+      DIRENT_EVENTS | FAN_ATTRIB | FAN_MOVE_SELF | FAN_DELETE_SELF
+
+Example of the record:
+
+    watch=/tmp : ACCESS | MODIFY | OPEN
+
 
 ## Command line options
 Program options:
